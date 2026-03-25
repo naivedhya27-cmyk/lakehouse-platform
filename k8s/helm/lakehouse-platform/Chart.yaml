@@ -1,0 +1,34 @@
+apiVersion: v2
+name: lakehouse-platform
+description: Open-source Databricks alternative - Unified Data Lakehouse Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - data-lakehouse
+  - spark
+  - delta-lake
+  - analytics
+  - ml-platform
+  - sql
+  - notebooks
+home: https://github.com/naivedhya27-cmyk/lakehouse-platform
+maintainers:
+  - name: LakehousePlatform Team
+dependencies:
+  - name: postgresql
+    version: "~13.2"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "~18.6"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: kafka
+    version: "~26.6"
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled
+  - name: spark-operator
+    version: "~1.2"
+    repository: https://googlecloudplatform.github.io/spark-on-k8s-operator
+    condition: spark-operator.enabled
