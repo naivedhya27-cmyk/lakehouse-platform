@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lakehouse-frontend
+  namespace: lakehouse
+  labels:
+    app: lakehouse-frontend
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lakehouse-frontend
+  template:
+    metadata:
+      labels:
+        app: lakehouse-frontend
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/naivedhya27-cmyk/lakehouse-frontend:latest
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lakehouse-frontend
+  namespace: lakehouse
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: lakehouse-frontend
