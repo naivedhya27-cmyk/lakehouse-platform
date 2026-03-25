@@ -1,0 +1,95 @@
+# Service Account for the platform
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lakehouse-platform
+  namespace: lakehouse
+  labels:
+    app: lakehouse-platform
+---
+# Service Account for Spark jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark
+  namespace: lakehouse-compute
+  labels:
+    app: lakehouse-platform
+    component: spark
+---
+# ClusterRole for Spark Operator (manage SparkApplications)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: lakehouse-spark-role
+  labels:
+    app: lakehouse-platform
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["sparkoperator.k8s.io"]
+    resources: ["sparkapplications", "sparkapplications/status", "scheduledsparkapplications"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+---
+# Bind ClusterRole to platform ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lakehouse-spark-binding
+  labels:
+    app: lakehouse-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: lakehouse-spark-role
+subjects:
+  - kind: ServiceAccount
+    name: lakehouse-platform
+    namespace: lakehouse
+---
+# Bind ClusterRole to Spark ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spark-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: lakehouse-spark-role
+subjects:
+  - kind: ServiceAccount
+    name: spark
+    namespace: lakehouse-compute
+---
+# Network Policy - restrict inter-service communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lakehouse-network-policy
+  namespace: lakehouse
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: lakehouse
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: lakehouse
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+  egress:
+    - {} # Allow all egress
