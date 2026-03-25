@@ -1,0 +1,1 @@
+"""LakehousePlatform SQL Analytics"""
