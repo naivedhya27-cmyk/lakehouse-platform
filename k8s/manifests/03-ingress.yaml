@@ -1,0 +1,63 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lakehouse-ingress
+  namespace: lakehouse
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - lakehouse.example.com
+        - api.lakehouse.example.com
+        - notebooks.lakehouse.example.com
+        - mlflow.lakehouse.example.com
+      secretName: lakehouse-tls
+  rules:
+    - host: lakehouse.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lakehouse-frontend
+                port:
+                  number: 3000
+    - host: api.lakehouse.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lakehouse-api
+                port:
+                  number: 8000
+    - host: notebooks.lakehouse.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lakehouse-jupyter
+                port:
+                  number: 8888
+    - host: mlflow.lakehouse.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lakehouse-mlflow
+                port:
+                  number: 5000
