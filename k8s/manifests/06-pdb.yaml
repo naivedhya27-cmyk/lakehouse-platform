@@ -1,0 +1,22 @@
+# Pod Disruption Budgets for high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: lakehouse-api-pdb
+  namespace: lakehouse
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: lakehouse-api
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: lakehouse-frontend-pdb
+  namespace: lakehouse
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: lakehouse-frontend
