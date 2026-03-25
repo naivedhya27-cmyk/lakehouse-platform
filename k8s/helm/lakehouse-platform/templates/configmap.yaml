@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lakehouse.fullname" . }}-config
+  labels:
+    {{- include "lakehouse.labels" . | nindent 4 }}
+data:
+  APP_NAME: "LakehousePlatform"
+  APP_VERSION: {{ .Chart.AppVersion | quote }}
+  STORAGE_TYPE: {{ .Values.global.storage.type | quote }}
+  TRINO_HOST: "{{ include "lakehouse.fullname" . }}-trino"
+  TRINO_PORT: "8080"
+  MLFLOW_TRACKING_URI: "http://{{ include "lakehouse.fullname" . }}-mlflow:5000"
+  KAFKA_BOOTSTRAP_SERVERS: "{{ include "lakehouse.fullname" . }}-kafka:9092"
+  KEYCLOAK_URL: "http://{{ include "lakehouse.fullname" . }}-keycloak:8080"
+  KEYCLOAK_REALM: "lakehouse"
+  KEYCLOAK_CLIENT_ID: "lakehouse-api"
+  SPARK_NAMESPACE: "{{ .Values.sparkNamespace | default "lakehouse-compute" }}"
+  REDIS_URL: "redis://{{ include "lakehouse.fullname" . }}-redis-master:6379"
+  ENABLE_METRICS: "true"
+  {{- range $key, $value := .Values.api.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
