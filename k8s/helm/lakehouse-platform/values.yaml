@@ -1,0 +1,273 @@
+# LakehousePlatform Helm Chart Values
+# Default values - override in values-production.yaml
+
+global:
+  image:
+    registry: ghcr.io
+    pullPolicy: IfNotPresent
+  storage:
+    type: s3  # s3, gcs, azure, minio
+  env: production
+
+# ============================================================
+# API Service
+# ============================================================
+api:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/naivedhya27-cmyk/lakehouse-api
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    hosts:
+      - host: api.lakehouse.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: lakehouse-api-tls
+        hosts:
+          - api.lakehouse.example.com
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+  env:
+    SECRET_KEY: ""  # Set in values-production.yaml or via secret
+    DATABASE_URL: ""
+    REDIS_URL: ""
+
+# ============================================================
+# Frontend
+# ============================================================
+frontend:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: ghcr.io/naivedhya27-cmyk/lakehouse-frontend
+    tag: latest
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: lakehouse.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: lakehouse-frontend-tls
+        hosts:
+          - lakehouse.example.com
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# ============================================================
+# Apache Spark Operator
+# ============================================================
+spark-operator:
+  enabled: true
+  webhook:
+    enable: true
+  metrics:
+    enable: true
+
+sparkNamespace: lakehouse-compute
+
+# ============================================================
+# JupyterHub
+# ============================================================
+jupyterhub:
+  enabled: true
+
+  hub:
+    config:
+      Authenticator:
+        admin_users:
+          - admin
+      JupyterHub:
+        admin_access: true
+
+  singleuser:
+    image:
+      name: jupyter/pyspark-notebook
+      tag: latest
+    memory:
+      limit: 8G
+      guarantee: 2G
+    cpu:
+      limit: 4
+      guarantee: 0.5
+    storage:
+      capacity: 10Gi
+
+  proxy:
+    service:
+      type: ClusterIP
+
+  ingress:
+    enabled: true
+    hosts:
+      - notebooks.lakehouse.example.com
+
+# ============================================================
+# MLflow
+# ============================================================
+mlflow:
+  enabled: true
+
+  image:
+    repository: ghcr.io/mlflow/mlflow
+    tag: v2.10.0
+
+  service:
+    type: ClusterIP
+    port: 5000
+
+  persistence:
+    enabled: true
+    storageClass: standard
+    size: 20Gi
+
+  ingress:
+    enabled: true
+    hosts:
+      - mlflow.lakehouse.example.com
+
+# ============================================================
+# Trino
+# ============================================================
+trino:
+  enabled: true
+
+  server:
+    workers: 2
+
+  coordinator:
+    resources:
+      requests:
+        cpu: 1
+        memory: 4Gi
+
+  worker:
+    resources:
+      requests:
+        cpu: 2
+        memory: 8Gi
+
+  ingress:
+    enabled: true
+    hosts:
+      - trino.lakehouse.example.com
+
+# ============================================================
+# PostgreSQL (metadata store)
+# ============================================================
+postgresql:
+  enabled: true
+  auth:
+    database: lakehouse
+    username: lakehouse
+    password: ""  # Set in values-production.yaml
+
+  primary:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+# ============================================================
+# Redis
+# ============================================================
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+
+# ============================================================
+# Kafka (Streaming)
+# ============================================================
+kafka:
+  enabled: true
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2Gi
+
+# ============================================================
+# Keycloak (Authentication)
+# ============================================================
+keycloak:
+  enabled: true
+  auth:
+    adminUser: admin
+    adminPassword: ""  # Set in values-production.yaml
+
+  ingress:
+    enabled: true
+    hosts:
+      - auth.lakehouse.example.com
+
+# ============================================================
+# Monitoring
+# ============================================================
+prometheus:
+  enabled: true
+  server:
+    retention: "30d"
+
+grafana:
+  enabled: true
+  adminPassword: ""  # Set in values-production.yaml
+  ingress:
+    enabled: true
+    hosts:
+      - monitoring.lakehouse.example.com
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: lakehouse
+          folder: LakehousePlatform
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/lakehouse
