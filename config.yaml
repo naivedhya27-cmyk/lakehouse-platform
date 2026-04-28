@@ -1,0 +1,9 @@
+# ai_sdr pipeline config.
+# Loaded by ai_sdr.config.load_config().
+
+max_words: 65
+target_subject_words_max: 5
+min_critique_score: 8
+rewrite_passes: 1
+sender_first_name: "navi"
+loom_url_placeholder: "{LOOM_URL}"

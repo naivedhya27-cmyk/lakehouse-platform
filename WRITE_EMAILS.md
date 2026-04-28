@@ -1,3 +1,6 @@
+<!-- DEPRECATED — see ai_sdr/ package. Rubric is now embedded in
+ai_sdr/generate.py and ai_sdr/critique.py. Kept for history. -->
+
 # WRITE_EMAILS.md — Instructions for drafting cold emails
 
 You (Claude) will read `enriched.json` and produce `drafts.csv` with columns:

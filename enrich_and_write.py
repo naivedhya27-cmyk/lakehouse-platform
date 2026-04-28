@@ -1,3 +1,7 @@
+# DEPRECATED — see ai_sdr/ package.
+# This file is preserved for history; new development happens in ai_sdr/.
+# Use: python -m ai_sdr.cli run --input prospects.csv --output drafts.csv
+
 """Enrich prospects from prospects.csv by scraping their public homepage.
 
 Standard library only. Defensive: every network call is wrapped, a single
