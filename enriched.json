@@ -1,0 +1,14 @@
+[
+  {
+    "company_domain": "linear.app",
+    "url": "https://linear.app",
+    "title": "",
+    "meta_description": "",
+    "h1": "",
+    "paragraphs": [],
+    "latest_blog_post_title": "",
+    "errors": [
+      "homepage_fetch_failed"
+    ]
+  }
+]
