@@ -17,6 +17,7 @@ class Config:
     rewrite_passes: int
     sender_first_name: str
     loom_url_placeholder: str
+    use_llm: bool = False
 
     @classmethod
     def from_dict(cls, d: Dict[str, Any]) -> "Config":
@@ -38,6 +39,7 @@ class Config:
             rewrite_passes=int(d["rewrite_passes"]),
             sender_first_name=str(d["sender_first_name"]),
             loom_url_placeholder=str(d["loom_url_placeholder"]),
+            use_llm=bool(d.get("use_llm", False)),
         )
 
 

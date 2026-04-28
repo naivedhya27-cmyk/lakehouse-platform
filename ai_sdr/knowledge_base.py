@@ -11,7 +11,7 @@ every field — the generator depends on every key.
 from .models import KnowledgeEntry
 
 
-_RAW: dict = {
+KNOWLEDGE: dict[str, KnowledgeEntry] = {
     "linear.app": KnowledgeEntry(
         domain="linear.app",
         founder_first_name="Karri",
@@ -185,9 +185,21 @@ _RAW: dict = {
 }
 
 
+# Auto-merged extras produced by scout.py running outside the sandbox.
+# Optional — present only after a user runs `python scout.py --input ...`.
+try:
+    from .knowledge_base_extra import EXTRA  # type: ignore[import-not-found]
+    KNOWLEDGE.update(EXTRA)
+except ImportError:
+    pass
+except Exception:
+    # Never let a malformed extras file break the package import.
+    pass
+
+
 def lookup(domain: str) -> KnowledgeEntry | None:
-    return _RAW.get(domain.lower().strip())
+    return KNOWLEDGE.get(domain.lower().strip())
 
 
 def all_domains() -> list[str]:
-    return list(_RAW.keys())
+    return list(KNOWLEDGE.keys())

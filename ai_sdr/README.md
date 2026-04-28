@@ -109,6 +109,69 @@ sender_first_name: "navi"
 loom_url_placeholder: "{LOOM_URL}"
 ```
 
+## Adding a new prospect
+
+The knowledge base ships pre-populated with a curated set of companies.
+For anything new, you don't have to hand-write an entry — `scout.py`
+(at the repo root) will scrape the homepage and populate one for you.
+
+```bash
+# 1. Add the domain to a fresh CSV
+echo "company_domain"   >  fresh_prospects.csv
+echo "newcompany.com"  >>  fresh_prospects.csv
+
+# 2. Run scout locally (NOT inside the agent sandbox — needs outbound HTTP).
+python scout.py --input fresh_prospects.csv
+
+# 3. scout.py writes ai_sdr/knowledge_base_extra.py — a Python module
+#    exposing an EXTRA dict of {domain: KnowledgeEntry}. The main
+#    knowledge base auto-merges it on import (no code changes needed).
+
+# 4. Re-run the pipeline; the new prospect now gets full personalization.
+python -m ai_sdr.cli run --input prospects.csv --output drafts.csv
+```
+
+`scout.py` fetches `/`, `/blog`, and `/changelog` with a real User-Agent.
+On Cloudflare 403 / network failure / 5xx, it transparently retries via
+`web.archive.org`'s most recent snapshot. Stdlib only — no `pip install`.
+A single bad domain never crashes the run.
+
+Founder name and curated wedge fields are left blank by `scout.py` — the
+LLM path can still write a personalized email from the scraped signature
+feature and personalization hook, but you'll get the best results by
+filling those two fields by hand once after scouting.
+
+## Using a real LLM
+
+The default deterministic generator runs with no API key. To switch on
+the LLM path:
+
+```bash
+# 1. Export your Anthropic key
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# 2. Flip the flag in config.yaml
+sed -i 's/^use_llm: false/use_llm: true/' config.yaml
+
+# 3. Re-run
+python -m ai_sdr.cli run --input prospects.csv --output drafts.csv
+```
+
+Behavior:
+- The orchestrator calls `generate_via_llm` first, which POSTs to
+  `https://api.anthropic.com/v1/messages` with the system prompt at
+  `ai_sdr/prompts/email_writer.system.md` and a structured user prompt
+  built from the enriched record.
+- 3 retries with exponential backoff on network errors and 5xx/429.
+- Auth failures (401/403), rate-limit-after-retries, parse errors, or a
+  missing key all raise `LLMUnavailable`. The orchestrator catches it,
+  logs a warning, and falls back to the deterministic generator. The
+  pipeline never crashes because of LLM issues.
+- The critique loop runs identically on either path's output.
+
+Bump the model alias in `ai_sdr/generate.py::MODEL_NAME` when a newer
+sonnet ships — that's the only line that needs to change.
+
 ## Tests
 
 ```bash

@@ -7,19 +7,38 @@ prospect, then writes drafts.csv plus enriched.json.
 """
 
 import argparse
+import logging
+import os
 from pathlib import Path
 from typing import List, Tuple
 
 from .config import Config, load_config
 from .critique import critique
 from .enrich import enrich
-from .generate import generate, rewrite
+from .generate import LLMUnavailable, generate, generate_via_llm, rewrite
 from .io_utils import read_prospects, write_drafts_csv, write_json
 from .models import CritiqueResult, EmailDraft, EnrichedProspect
 
 
+_log = logging.getLogger("ai_sdr.cli")
+
+
+def _initial_draft(record: EnrichedProspect, config: Config) -> EmailDraft:
+    """Route to LLM if enabled+available; otherwise deterministic. Never crashes."""
+    if config.use_llm and os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            return generate_via_llm(record, config)
+        except LLMUnavailable as e:
+            _log.warning(
+                "LLM unavailable for %s (%s) — falling back to deterministic generator",
+                record.company_domain,
+                e,
+            )
+    return generate(record, config)
+
+
 def _process_one(record: EnrichedProspect, config: Config) -> Tuple[EmailDraft, CritiqueResult]:
-    draft = generate(record, config)
+    draft = _initial_draft(record, config)
     result = critique(draft, record, config)
     passes_remaining = config.rewrite_passes
     while not result.passes and passes_remaining > 0:
