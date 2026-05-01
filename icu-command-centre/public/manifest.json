@@ -1,0 +1,9 @@
+{
+  "short_name": "ICU CC",
+  "name": "ICU Command Centre",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0a1628",
+  "background_color": "#0a1628"
+}
